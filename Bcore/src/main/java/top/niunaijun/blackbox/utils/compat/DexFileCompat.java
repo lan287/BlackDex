@@ -84,7 +84,7 @@ public class DexFileCompat {
         return cookies;
     }
 
-    private static List<DexFile> getDexFiles(ClassLoader classLoader) {
+    public static List<DexFile> getDexFiles(ClassLoader classLoader) {
         List<DexFile> dexFiles = new ArrayList<>();
         Object[] dexElements = getDexElements(classLoader);
         for (Object dexElement : dexElements) {
