@@ -13,6 +13,7 @@
 #include <hook/UnixFileSystemHook.h>
 #include "DexDump.h"
 #include "utils/HexDump.h"
+#include "shield/anti_detect.h"
 #import "xhook/xhook.h"
 
 struct {
@@ -186,8 +187,20 @@ void hookDumpDex(JNIEnv *env, jobject clazz, jstring dir) {
     DexDump::hookDumpDex(env, dir);
 }
 
-void cookieDumpDex(JNIEnv *env, jclass clazz, jlong cookie, jstring dir, jboolean fixCodeItem) {
+void cookieDumpDex(JNIEnv *env, jobject clazz, jlong cookie, jstring dir, jboolean fixCodeItem) {
     DexDump::cookieDumpDex(env, cookie, dir, fixCodeItem);
+}
+
+void installAntiDetect(JNIEnv *env, jclass clazz) {
+    (void) env;
+    (void) clazz;
+    shield::AntiDetect::jniInstall(env, clazz);
+}
+
+void randomizeProcName(JNIEnv *env, jclass clazz) {
+    (void) env;
+    (void) clazz;
+    shield::AntiDetect::jniRandomizeProcessName(env, clazz);
 }
 
 static JNINativeMethod gMethods[] = {
@@ -197,6 +210,8 @@ static JNINativeMethod gMethods[] = {
         {"init",            "(I)V",                                    (void *) init},
         {"hookDumpDex",     "(Ljava/lang/String;)V",                   (void *) hookDumpDex},
         {"cookieDumpDex",   "(JLjava/lang/String;Z)V",                 (void *) cookieDumpDex},
+        {"installAntiDetect", "()V",                                   (void *) installAntiDetect},
+        {"randomizeProcName", "()V",                                   (void *) randomizeProcName},
 };
 
 int registerNativeMethods(JNIEnv *env, const char *className,

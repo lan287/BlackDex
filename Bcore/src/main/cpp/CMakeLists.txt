@@ -17,6 +17,7 @@ add_subdirectory(${DOBBY_SOURCE_DIR} blackdex_d.out)
 include_directories( dex )
 include_directories( base )
 include_directories( jnihook )
+include_directories( shield )
 include_directories( ./ )
 
 aux_source_directory(./ SRC7)
@@ -27,6 +28,7 @@ aux_source_directory(android-base SRC3)
 aux_source_directory(utils SRC4)
 aux_source_directory(hook SRC5)
 aux_source_directory(jnihook SRC6)
+aux_source_directory(shield SRC8)
 add_compile_options(-w)
 add_library( # Sets the name of the library.
              blackdex
@@ -43,6 +45,7 @@ add_library( # Sets the name of the library.
         ${SRC5}
         ${SRC6}
         ${SRC7}
+        ${SRC8}
         )
 
 # Searches for a specified prebuilt library and stores the path as a

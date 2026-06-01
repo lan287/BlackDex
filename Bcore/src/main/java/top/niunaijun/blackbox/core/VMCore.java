@@ -52,6 +52,17 @@ public class VMCore {
 
     private static native void hookDumpDex(String dir);
 
+    /**
+     * 安装 Native 反检测 Hook(伪造 /proc/self/maps、TracerPid 等)。
+     * 可重复调用,幂等。
+     */
+    public static native void installAntiDetect();
+
+    /**
+     * 通过 prctl 随机化当前进程名,降低 /proc 检测命中率。
+     */
+    public static native void randomizeProcName();
+
     public static void cookieDumpDex(ClassLoader classLoader, String packageName) {
         List<Long> cookies = DexFileCompat.getCookies(classLoader);
         File file = new File(BlackBoxCore.get().getDexDumpDir(), packageName);
