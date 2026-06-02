@@ -1,61 +1,51 @@
-plugins {
-    id 'com.android.application'
-    id 'kotlin-android'
-}
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.3"
+    namespace 'top.niunaijun.blackdex'
+    compileSdk 31
 
-    defaultConfig {
-        applicationId "top.niunaijun.blackdex"
-        minSdkVersion 21
-        targetSdkVersion 30
-        versionCode 6
-        versionName "3.2.0"
-
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-        flavorDimensions "BlackDex32"
+    buildFeatures {
+        viewBinding = true
     }
 
-    productFlavors {
-        BlackDex32 {
-            applicationId "top.niunaijun.blackdexa32"
-            ndk {
-                abiFilters "armeabi-v7a"
-            }
-            resValue "string", "app_name", "BlackDex32"
-        }
+    defaultConfig {
+        applicationId "top.niunaijun.blackdex32"
+        minSdkVersion 21
+        targetSdkVersion 30
+        buildToolsVersion "30.0.3"
+        versionCode 1
+        versionName "3.2.0"
+        multiDexEnabled true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        BlackDex64 {
-            applicationId "top.niunaijun.blackdexa64"
-            ndk {
-                abiFilters "arm64-v8a"
-            }
-            resValue "string", "app_name", "BlackDex64"
+        ndk { abiFilters 'armeabi-v7a' }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("sign/blackdex.jks")
+            keyAlias "blackdex"
+            keyPassword "blackdex"
+            storePassword "blackdex"
         }
     }
 
     buildTypes {
         debug {
-            debuggable true
-            jniDebuggable true
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-
         release {
-            debuggable false
-            jniDebuggable false
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-
-    buildFeatures{
-        viewBinding true
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -64,42 +54,62 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+    }
+    flavorDimensions "default"
+
+    productFlavors {
+        blackdex64 {
+            minSdkVersion 21
+            targetSdkVersion 30
+            versionCode 1
+            versionName "3.2.0"
+            multiDexEnabled true
+
+            ndk { abiFilters 'arm64-v8a' }
+        }
+        blackdex32 {
+            minSdkVersion 21
+            targetSdkVersion 30
+            versionCode 1
+            versionName "3.2.0"
+            multiDexEnabled true
+
+            ndk { abiFilters 'armeabi-v7a' }
+        }
+    }
+
 }
 
 dependencies {
-
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation project(path: ':Bcore')
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.core:core-ktx:1.5.0'
-    implementation 'androidx.appcompat:appcompat:1.3.0'
+    implementation 'androidx.core:core-ktx:1.6.0'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.2.2"
+
+    implementation 'androidx.appcompat:appcompat:1.4.0-alpha03'
     implementation 'com.google.android.material:material:1.3.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation 'androidx.preference:preference-ktx:1.1.1'
-
-    implementation project(':Bcore')
-
-    //coroutines
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.2"
-
-    //viewModel liveData  lifecycle
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.1"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.3.1"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.3.1"
 
-    //third
-
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
+    implementation 'pub.devrel:easypermissions:1.0.1'
+    implementation 'com.umeng.umsdk:common:9.3.8'
+    implementation 'com.umeng.umsdk:asms:1.2.2'
+    implementation 'com.elvishew:xlog:1.11.0'
+    implementation 'com.github.Ferfalk:SimpleSearchView:0.2.0'
     implementation 'com.afollestad.material-dialogs:core:3.3.0'
     implementation 'com.afollestad.material-dialogs:files:3.2.1'
-    //dialog
     implementation 'com.github.nukc.stateview:kotlin:2.2.0'
-    //状态控制控件
-    implementation 'com.github.Ferfalk:SimpleSearchView:0.2.0'
-    //searchView
+    implementation 'com.github.bumptech.glide:glide:4.11.0'
+    implementation 'com.google.code.gson:gson:2.8.6'
 
-    implementation  'com.umeng.umsdk:common:9.3.8'
-    implementation  'com.umeng.umsdk:asms:1.2.2'
-    //友盟
-
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }

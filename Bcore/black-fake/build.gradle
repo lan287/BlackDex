@@ -3,7 +3,8 @@ plugins {
 }
 
 android {
-    compileSdkVersion 30
+    namespace 'top.niunaijun.black_fake'
+    compileSdk 30
     buildToolsVersion "30.0.3"
 
     defaultConfig {

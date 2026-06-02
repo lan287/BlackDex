@@ -1,7 +1,6 @@
 package top.niunaijun.blackbox.utils.compat;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -171,6 +170,6 @@ public final class DexFileEnumerator {
      * 仅从单一 ClassLoader 提取 DexFile 的便捷方法,内部委托给 DexFileCompat。
      */
     public static List<DexFile> getDexFilesFrom(ClassLoader cl) {
-        return new ArrayList<>(Arrays.asList(DexFileCompat.getDexFiles(cl)));
+        return new ArrayList<>(DexFileCompat.getDexFiles(cl));
     }
 }

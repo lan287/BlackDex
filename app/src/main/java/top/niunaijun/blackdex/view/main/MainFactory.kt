@@ -13,7 +13,7 @@ import top.niunaijun.blackdex.data.DexDumpRepository
 @Suppress("UNCHECKED_CAST")
 class MainFactory(private val repo:DexDumpRepository): ViewModelProvider.NewInstanceFactory() {
 
-    override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return MainViewModel(repo) as T
     }
 }

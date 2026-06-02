@@ -1,4 +1,5 @@
 <resources>
+    <string name="app_name">BlackDex</string>
     <string name="filter">Filter</string>
     <string name="choose">Select</string>
     <string name="log">Logcat</string>

@@ -1,7 +1,16 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    namespace 'top.niunaijun.blackbox'
+    compileSdk 28
+    ndkVersion "21.4.7075529"
+
+    buildFeatures {
+        aidl = true
+    }
+
+    useLibrary 'org.apache.http.legacy'
+
     buildToolsVersion "28.0.2"
 
     defaultConfig {
@@ -9,64 +18,77 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
 
-        consumerProguardFiles "consumer-rules.pro"
-        ndk {
-            // 设置支持的SO库架构
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86'
-        }
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    externalNativeBuild {
-        cmake {
-            path file('./src/main/cpp/CMakeLists.txt')
-        }
-    }
-    dexOptions {
-        preDexLibraries false
-        maxProcessCount 8
-        javaMaxHeapSize "4g"
-    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    aaptOptions {
-        cruncherEnabled = false
-        useNewCruncher = false
-    }
-    testOptions {
-        unitTests.returnDefaultValues = true
-    }
     lintOptions {
-        checkReleaseBuilds false
         abortOnError false
-        warningsAsErrors false
-        disable "UnusedResources", 'RestrictedApi'
-        textOutput "stdout"
-        textReport false
-        check 'NewApi', 'InlinedApi'
+    }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+    }
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.10.2"
+        }
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
     }
 }
 
-
-tasks.withType(Javadoc) {
-    options.addStringOption('Xdoclint:none', '-quiet')
-    options.addStringOption('encoding', 'UTF-8')
-    options.addStringOption('charSet', 'UTF-8')
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
 }
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-
-    implementation 'me.weishu:free_reflection:3.0.1'
-    implementation project(':Bcore:black-hook')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':Bcore:black-fake')
+    implementation project(':Bcore:black-hook')
+
+    /*Android 12 issues*/
+    implementation 'com.google.guava:listenablefuture:1.0'
+    /*Android 12 issues*/
+
+    implementation 'androidx.core:core:1.3.2'
+    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'com.google.android.gms:play-services-base:17.1.0'
+    implementation 'com.google.android.gms:play-services-identity:17.0.0'
+    implementation 'com.google.android.gms:play-services-auth:18.1.0'
+    implementation 'com.google.android.gms:play-services-auth-api-phone:17.4.0'
+    implementation 'com.google.android.gms:play-services-tasks:17.2.0'
+    implementation 'com.google.android.gms:play-services-games:21.0.0'
+
+    implementation "androidx.compose.ui:ui:1.1.1"
+    // Tooling support (Previews, etc.)
+    implementation "androidx.compose.ui:ui-tooling:1.1.1"
+    // Foundation (Border, Background, Box, Image, Scroll, shapes, animations, etc.)
+    implementation "androidx.compose.foundation:foundation:1.1.1"
+    // Material Design
+    implementation "androidx.compose.material:material:1.1.1"
+    // Material design icons
+    implementation "androidx.compose.material:material-icons-core:1.1.1"
+    implementation "androidx.compose.material:material-icons-extended:1.1.1"
+    // Integration with observables
+    implementation "androidx.compose.runtime:runtime-livedata:1.1.1"
+    implementation "androidx.compose.runtime:runtime-rxjava2:1.1.1"
+
 }
