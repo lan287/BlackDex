@@ -22,7 +22,10 @@
                 android:key="fix_code_item"
                 android:summary="@string/fix_code_item_desc"
                 android:title="@string/fix_code_item" />
-
+        <SwitchPreferenceCompat
+                android:key="anti_trace"
+                android:summary="@string/anti_trace_desc"
+                android:title="@string/anti_trace" />
 
     </PreferenceCategory>
 

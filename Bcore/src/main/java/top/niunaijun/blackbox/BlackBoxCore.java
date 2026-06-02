@@ -108,6 +108,15 @@ public class BlackBoxCore extends ClientConfiguration {
 //            }
         }
         HookManager.get().init();
+        // Hide runtime artifacts in the process. The SoHider runs in every
+        // process that has the native library loaded, so by the time this is
+        // reached every spawned :pX process is already protected.
+        if (mClientConfiguration != null) {
+            top.niunaijun.blackbox.core.VMCore.setAntiTraceEnabled(
+                    mClientConfiguration.isAntiTraceEnabled());
+        } else {
+            top.niunaijun.blackbox.core.VMCore.setAntiTraceEnabled(true);
+        }
     }
 
     public void doCreate() {

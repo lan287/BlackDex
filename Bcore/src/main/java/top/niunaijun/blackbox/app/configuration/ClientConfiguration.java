@@ -35,4 +35,13 @@ public abstract class ClientConfiguration {
     public boolean isEnableHookDump() {
         return true;
     }
+
+    /**
+     * Whether the native runtime should hide the libraries it loads from
+     * target apps. Default: {@code true}. Override in your host application
+     * to disable for benchmarking or unit tests.
+     */
+    public boolean isAntiTraceEnabled() {
+        return true;
+    }
 }

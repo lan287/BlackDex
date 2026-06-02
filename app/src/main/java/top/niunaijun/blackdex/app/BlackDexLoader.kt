@@ -52,6 +52,10 @@ class BlackDexLoader {
             override fun isEnableHookDump(): Boolean {
                 return mHookDump
             }
+
+            override fun isAntiTraceEnabled(): Boolean {
+                return mAntiTrace
+            }
         })
     }
 

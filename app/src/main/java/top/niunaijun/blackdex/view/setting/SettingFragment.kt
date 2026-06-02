@@ -90,6 +90,11 @@ class SettingFragment : PreferenceFragmentCompat() {
         return@OnPreferenceChangeListener true
     }
 
+    private val mAntiTraceChange = Preference.OnPreferenceChangeListener { _, newValue ->
+        AppManager.mBlackBoxLoader.setAntiTrace(newValue as Boolean)
+        return@OnPreferenceChangeListener true
+    }
+
     private val mFixCodeItemChange = Preference.OnPreferenceChangeListener { _, newValue ->
         if (newValue as Boolean) {
 

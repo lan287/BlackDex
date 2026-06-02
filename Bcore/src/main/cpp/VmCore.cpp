@@ -13,6 +13,7 @@
 #include <hook/UnixFileSystemHook.h>
 #include "DexDump.h"
 #include "utils/HexDump.h"
+#include "SoHider.h"
 #import "xhook/xhook.h"
 
 struct {
@@ -146,6 +147,10 @@ void nativeHook(JNIEnv *env) {
     UnixFileSystemHook::init(env);
 //    VMClassLoaderHook::init(env);
     ProcessHook::init(env);
+    // Suppress artifacts that we leave in the process. Must run after the
+    // other hooks so that any helper functions they load are already resolved
+    // before we start filtering dlopen results.
+    SoHider::init(env);
 }
 
 void hideXposed(JNIEnv *env, jclass clazz) {
@@ -197,6 +202,8 @@ static JNINativeMethod gMethods[] = {
         {"init",            "(I)V",                                    (void *) init},
         {"hookDumpDex",     "(Ljava/lang/String;)V",                   (void *) hookDumpDex},
         {"cookieDumpDex",   "(JLjava/lang/String;Z)V",                 (void *) cookieDumpDex},
+        {"setAntiTraceEnabled", "(Z)V",                                (void *) setAntiTraceEnabled},
+        {"addHiddenLibrary",    "(Ljava/lang/String;)V",              (void *) addHiddenLibrary},
 };
 
 int registerNativeMethods(JNIEnv *env, const char *className,

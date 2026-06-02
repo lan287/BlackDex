@@ -48,6 +48,10 @@ public class VMCore {
 
     public static native void hideXposed();
 
+    public static native void setAntiTraceEnabled(boolean enabled);
+
+    public static native void addHiddenLibrary(String basename);
+
     private static native void cookieDumpDex(long cookie, String dir, boolean fixMethod);
 
     private static native void hookDumpDex(String dir);

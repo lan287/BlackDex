@@ -34,4 +34,7 @@
     <string name="dumping">Unpacking…</string>
     <string name="hook_dump_desc">Use hook to improve the success rate of unpacking</string>
     <string name="hook_dump">Hook Dump</string>
+
+    <string name="anti_trace">Hide runtime artifacts</string>
+    <string name="anti_trace_desc">Hide helper libraries from the target app to lower detection rate</string>
 </resources>
