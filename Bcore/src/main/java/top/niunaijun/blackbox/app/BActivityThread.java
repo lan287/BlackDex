@@ -16,10 +16,15 @@ import android.os.Looper;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import reflection.android.app.ActivityThread;
 import reflection.android.app.ContextImpl;
@@ -215,23 +220,93 @@ public class BActivityThread extends IBActivityThread.Stub {
 
     private void handleDumpDex(String packageName, DumpResult result, ClassLoader classLoader) {
         new Thread(() -> {
+            // Wait for hooks to capture dynamically loaded dex files
+            // Packed apps load real dex in Application.onCreate() or Activity lifecycle
+            boolean isFixCodeItem = BlackBoxCore.get().isFixCodeItem();
+            long waitMs = isFixCodeItem ? 10000 : 3000;
             try {
-                Thread.sleep(500);
+                Thread.sleep(waitMs);
             } catch (InterruptedException ignored) {
             }
+
             try {
                 VMCore.cookieDumpDex(classLoader, packageName);
-            } finally {
-                mAppConfig = null;
-                File dir = new File(result.dir);
-                if (!dir.exists() || dir.listFiles().length == 0) {
-                    BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpError("not found dex file"));
-                } else {
-                    BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpSuccess());
-                }
-                BlackBoxCore.get().uninstallPackage(packageName);
+            } catch (Throwable e) {
+                Slog.e(TAG, "cookieDumpDex failed", e);
             }
+
+            File dir = new File(result.dir);
+
+            // If native dump produced nothing, try extracting dex directly from APK
+            if (!hasDexFiles(dir)) {
+                Slog.i(TAG, "Native dump empty, trying APK extraction for " + packageName);
+                try {
+                    extractDexFromApk(packageName, dir);
+                } catch (Throwable e) {
+                    Slog.e(TAG, "APK extraction failed", e);
+                }
+            }
+
+            mAppConfig = null;
+            if (hasDexFiles(dir)) {
+                BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpSuccess());
+            } else {
+                BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpError("not found dex file"));
+            }
+            BlackBoxCore.get().uninstallPackage(packageName);
         }).start();
+    }
+
+    private static boolean hasDexFiles(File dir) {
+        if (!dir.exists()) return false;
+        File[] files = dir.listFiles();
+        if (files == null) return false;
+        for (File f : files) {
+            if (f.isFile() && f.getName().endsWith(".dex") && f.length() > 0x70) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Fallback: extract dex files directly from the APK.
+     * This works for non-packed apps. For packed apps, the native hooks
+     * should have already captured the dynamically loaded dex files.
+     */
+    private void extractDexFromApk(String packageName, File dumpDir) {
+        try {
+            PackageInfo packageInfo = BlackBoxCore.getBPackageManager().getPackageInfo(
+                    packageName, 0, BActivityThread.getUserId());
+            if (packageInfo == null || packageInfo.applicationInfo == null) return;
+
+            String apkPath = packageInfo.applicationInfo.sourceDir;
+            if (apkPath == null) return;
+
+            FileUtils.mkdirs(dumpDir.getAbsolutePath());
+            ZipFile zipFile = new ZipFile(apkPath);
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                String name = entry.getName();
+                if (name.startsWith("classes") && name.endsWith(".dex")) {
+                    File outputFile = new File(dumpDir, "apk_" + name.replace("/", "_"));
+                    if (outputFile.exists()) continue;
+                    try (InputStream is = zipFile.getInputStream(entry);
+                         FileOutputStream fos = new FileOutputStream(outputFile)) {
+                        byte[] buffer = new byte[8192];
+                        int len;
+                        while ((len = is.read(buffer)) > 0) {
+                            fos.write(buffer, 0, len);
+                        }
+                    }
+                    Slog.i(TAG, "Extracted " + name + " from APK (" + outputFile.length() + " bytes)");
+                }
+            }
+            zipFile.close();
+        } catch (Throwable e) {
+            Slog.e(TAG, "extractDexFromApk error", e);
+        }
     }
 
     private Context createPackageContext(ApplicationInfo info) {

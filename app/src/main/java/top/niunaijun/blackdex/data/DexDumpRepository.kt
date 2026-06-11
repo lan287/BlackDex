@@ -21,15 +21,13 @@ import top.niunaijun.blackdex.data.entity.AppInfo
 import top.niunaijun.blackdex.data.entity.DumpInfo
 import java.io.File
 
-/**
- *
- * @Description:
- * @Author: wukaicheng
- * @CreateDate: 2021/5/23 14:29
- */
 class DexDumpRepository {
 
     private var dumpTaskId = 0
+
+    // Track whether the monitor callback has already delivered a final result
+    @Volatile
+    private var monitorDelivered = false
 
     fun getAppList(mAppListLiveData: MutableLiveData<List<AppInfo>>) {
         GlobalScope.launch(Dispatchers.IO) {
@@ -57,6 +55,7 @@ class DexDumpRepository {
     }
 
     fun dumpDex(source: String, dexDumpLiveData: MutableLiveData<DumpInfo>) {
+        monitorDelivered = false
         dexDumpLiveData.postValue(DumpInfo(DumpInfo.LOADING))
         val result = if (URLUtil.isValidUrl(source)) {
             BlackDexCore.get().dumpDex(Uri.parse(source))
@@ -74,9 +73,19 @@ class DexDumpRepository {
         }
     }
 
-
     fun dumpSuccess() {
         dumpTaskId++
+    }
+
+    /**
+     * Called from the monitor callback when the proxy process reports a result.
+     * Returns true if the result was consumed, false if it should be handled by the caller.
+     */
+    fun onMonitorResult(dexDumpLiveData: MutableLiveData<DumpInfo>, dumpInfo: DumpInfo): Boolean {
+        if (monitorDelivered) return false
+        monitorDelivered = true
+        dexDumpLiveData.postValue(dumpInfo)
+        return true
     }
 
     private fun startCountdown(installResult: InstallResult, dexDumpLiveData: MutableLiveData<DumpInfo>) {
@@ -88,19 +97,22 @@ class DexDumpRepository {
                 delay(500)
                 waitCount++
             }
-            // Now wait for the proxy process to finish (or timeout)
+            // Wait for the proxy process to finish (or timeout)
             val isFixCode = AppManager.mBlackBoxLoader.isFixCodeItem()
             var timeoutCount = 0
-            val maxTimeout = if (isFixCode) 120 else 60 // 60s for normal, 120s for fixCodeItem
+            val maxTimeout = if (isFixCode) 120 else 60
             while (BlackDexCore.get().isRunning && timeoutCount < maxTimeout) {
                 delay(1000)
                 timeoutCount++
-                // Check if we already have dex files (early exit)
+                // If monitor already delivered result, stop waiting
+                if (monitorDelivered) return@launch
+                // Early exit if dex files exist
                 if (BlackDexCore.get().isExistDexFile(installResult.packageName)) {
                     break
                 }
             }
-            if (tempId == dumpTaskId) {
+            // Only post result if monitor hasn't already delivered one
+            if (tempId == dumpTaskId && !monitorDelivered) {
                 if (BlackDexCore.get().isExistDexFile(installResult.packageName)) {
                     dexDumpLiveData.postValue(DumpInfo(
                             DumpInfo.SUCCESS,

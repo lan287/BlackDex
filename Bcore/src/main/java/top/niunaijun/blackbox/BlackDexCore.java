@@ -110,7 +110,14 @@ public class BlackDexCore {
     }
 
     public boolean isExistDexFile(String packageName) {
-        File[] files = new File(BlackBoxCore.get().getDexDumpDir(), packageName).listFiles();
-        return files != null && files.length > 0;
+        File dir = new File(BlackBoxCore.get().getDexDumpDir(), packageName);
+        File[] files = dir.listFiles();
+        if (files == null) return false;
+        for (File f : files) {
+            if (f.isFile() && f.getName().endsWith(".dex") && f.length() > 0x70) {
+                return true;
+            }
+        }
+        return false;
     }
 }

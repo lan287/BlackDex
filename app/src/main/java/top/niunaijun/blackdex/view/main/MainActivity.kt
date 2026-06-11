@@ -154,30 +154,19 @@ class MainActivity : PermissionActivity() {
     private val mMonitor = object : IBDumpMonitor.Stub() {
         override fun onDump(result: DumpResult?) {
             result?.let {
-                // 此处做进度条
                 if (result.isRunning) {
                     loadingView?.setProgress(result.currProcess, result.totalProcess)
                     return
                 }
 
-                if (result.isSuccess) {
-                    viewModel.mDexDumpLiveData.postValue(
-                        DumpInfo(
-                            DumpInfo.SUCCESS,
-                            getString(R.string.dex_save, result.dir)
-                        )
-                    )
+                val dumpInfo = if (result.isSuccess) {
+                    DumpInfo(DumpInfo.SUCCESS, getString(R.string.dex_save, result.dir))
                 } else {
-                    viewModel.mDexDumpLiveData.postValue(
-                        DumpInfo(
-                            DumpInfo.FAIL,
-                            getString(R.string.error_msg, result.msg)
-                        )
-                    )
+                    DumpInfo(DumpInfo.FAIL, getString(R.string.error_msg, result.msg))
                 }
+                viewModel.mDexDumpLiveData.postValue(dumpInfo)
             }
         }
-
     }
 
 
