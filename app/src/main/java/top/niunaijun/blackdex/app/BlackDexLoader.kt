@@ -25,6 +25,8 @@ class BlackDexLoader {
 
     private var mHookDump by AppSharedPreferenceDelegate(App.getContext(),true)
 
+    private var mAntiTrace by AppSharedPreferenceDelegate(App.getContext(), true)
+
     private var mDir = if (mSaveEnable) {
         getDexDumpDir(App.getContext())
     } else {
@@ -94,6 +96,14 @@ class BlackDexLoader {
     fun isHookDump(): Boolean {
 
         return this.mHookDump
+    }
+
+    fun setAntiTrace(enable: Boolean) {
+        this.mAntiTrace = enable
+    }
+
+    fun isAntiTrace(): Boolean {
+        return this.mAntiTrace
     }
 
 

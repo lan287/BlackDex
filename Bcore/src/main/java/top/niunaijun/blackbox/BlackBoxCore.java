@@ -34,7 +34,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import me.weishu.reflection.Reflection;
 import reflection.android.app.ActivityThread;
 import top.niunaijun.blackbox.fake.frameworks.BStorageManager;
 import top.niunaijun.blackbox.core.system.ServiceManager;
@@ -79,7 +78,7 @@ public class BlackBoxCore extends ClientConfiguration {
         if (clientConfiguration == null) {
             throw new IllegalArgumentException("ClientConfiguration is null!");
         }
-        Reflection.unseal(context);
+        //Reflection.unseal(context);
         sContext = context;
         mClientConfiguration = clientConfiguration;
         mClientConfiguration.init();

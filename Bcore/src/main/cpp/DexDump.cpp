@@ -611,10 +611,10 @@ void DexDump::hookDumpDex(JNIEnv *env, jstring dir) {
     }
 
     // Also register deep dump hooks
-    registerOpenCommonHook();
-    registerDexFileCtorHook();
-    registerDefineClassHook();
-    registerInMemoryDexClassLoaderHook(env);
+    ::registerOpenCommonHook();
+    ::registerDexFileCtorHook();
+    ::registerDefineClassHook();
+    ::registerInMemoryDexClassLoaderHook(env);
 }
 
 // ===================================================================
@@ -631,10 +631,10 @@ void DexDump::enableDeepDump(JNIEnv *env, jstring dir) {
     xhook_refresh(0);
 
     // Install all dump hooks
-    registerOpenCommonHook();
-    registerDexFileCtorHook();
-    registerDefineClassHook();
-    registerInMemoryDexClassLoaderHook(env);
+    ::registerOpenCommonHook();
+    ::registerDexFileCtorHook();
+    ::registerDefineClassHook();
+    ::registerInMemoryDexClassLoaderHook(env);
 
     // Also install LoadMethod hook for backward compatibility
     const char *libart = "libart.so";

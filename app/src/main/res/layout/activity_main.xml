@@ -16,11 +16,13 @@
                 android:layout_height="wrap_content"
                 app:layout_constraintTop_toTopOf="parent" />
 
-        <com.ferfalk.simplesearchview.SimpleSearchView
+        <EditText
                 android:id="@+id/searchView"
-                app:type="card"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Search"
+                android:padding="12dp"
+                android:inputType="text"
                 android:background="@color/primary" />
 
     </FrameLayout>
@@ -30,7 +32,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-        <com.github.nukc.stateview.StateView
+        <FrameLayout
                 android:id="@+id/stateView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />

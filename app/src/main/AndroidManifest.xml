@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        package="top.niunaijun.blackdex">
+        xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Android 11 需要 -->
     <uses-permission
@@ -26,6 +25,7 @@
             android:theme="@style/Theme.BlackDex">
         <activity
                 android:name=".view.base.WelcomeActivity"
+                android:exported="true"
                 android:theme="@style/WelcomeTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,8 +33,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".view.main.MainActivity" />
-        <activity android:name=".view.setting.SettingActivity" />
+        <activity android:name=".view.main.MainActivity" android:exported="false" />
+        <activity android:name=".view.setting.SettingActivity" android:exported="false" />
     </application>
 
 </manifest>

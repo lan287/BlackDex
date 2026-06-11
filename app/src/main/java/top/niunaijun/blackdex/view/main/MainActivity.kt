@@ -12,8 +12,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.files.fileChooser
-import com.ferfalk.simplesearchview.SimpleSearchView
-import com.umeng.analytics.MobclickAgent
 import top.niunaijun.blackbox.BlackDexCore
 import top.niunaijun.blackbox.core.system.dump.IBDumpMonitor
 import top.niunaijun.blackbox.entity.dump.DumpResult
@@ -63,10 +61,6 @@ class MainActivity : PermissionActivity() {
         viewBinding.recyclerView.layoutManager = LinearLayoutManager(this)
 
         mAdapter.setOnItemClick { _, _, data ->
-            if (viewBinding.searchView.isSearchOpen) {
-                viewBinding.searchView.closeSearch()
-                filterApp("")
-            }
             hideKeyboard()
             viewModel.startDexDump(data.packageName)
         }
@@ -100,18 +94,18 @@ class MainActivity : PermissionActivity() {
     private fun initViewModel() {
         viewModel =
             ViewModelProvider(this, InjectionUtil.getMainFactory()).get(MainViewModel::class.java)
-        viewBinding.stateView.showLoading()
+        viewBinding.stateView.visibility = android.view.View.GONE
         viewModel.getAppList()
 
         viewModel.mAppListLiveData.observe(this) {
             it?.let {
                 this.appList = it
-                viewBinding.searchView.setQuery("", false)
+                viewBinding.searchView.setText("")
                 filterApp("")
                 if (it.isNotEmpty()) {
-                    viewBinding.stateView.showContent()
+                    viewBinding.stateView.visibility = android.view.View.GONE
                 } else {
-                    viewBinding.stateView.showEmpty()
+                    viewBinding.stateView.visibility = android.view.View.VISIBLE
                 }
             }
         }
@@ -188,21 +182,12 @@ class MainActivity : PermissionActivity() {
 
 
     private fun initSearchView() {
-        viewBinding.searchView.setOnQueryTextListener(object :
-            SimpleSearchView.OnQueryTextListener {
-            override fun onQueryTextChange(newText: String): Boolean {
-                filterApp(newText)
-                return true
+        viewBinding.searchView.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                filterApp(s?.toString() ?: "")
             }
-
-            override fun onQueryTextCleared(): Boolean {
-                return true
-            }
-
-            override fun onQueryTextSubmit(query: String): Boolean {
-                return true
-            }
-
+            override fun afterTextChanged(s: android.text.Editable?) {}
         })
     }
 
@@ -233,20 +218,12 @@ class MainActivity : PermissionActivity() {
     }
 
     override fun onBackPressed() {
-        if (viewBinding.searchView.isSearchOpen) {
-            viewBinding.searchView.closeSearch()
-            filterApp("")
-        } else {
-            super.onBackPressed()
-        }
+        super.onBackPressed()
     }
 
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
-        val item = menu!!.findItem(R.id.main_search)
-        viewBinding.searchView.setMenuItem(item)
-
         return true
     }
 
@@ -271,11 +248,9 @@ class MainActivity : PermissionActivity() {
 
     override fun onResume() {
         super.onResume()
-        MobclickAgent.onResume(this)
     }
 
     override fun onPause() {
         super.onPause()
-        MobclickAgent.onPause(this)
     }
 }
