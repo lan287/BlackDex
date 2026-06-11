@@ -1,12 +1,7 @@
 //
 // Created by blackbox on 2024/5/20.
-// Hide runtime artifacts so protected apps cannot detect us via:
-//   * dlopen / android_dlopen_ext / do_dlopen  (loader)
-//   * open / openat / fopen / access / stat     (fs)
-//   * /proc/self/maps / /proc/self/task/.../maps (memory layout)
-//
-// The hider is conservative: only artifacts that we ourselves loaded are
-// suppressed. We never modify behaviour for unrelated libraries.
+// Enhanced: hide runtime artifacts from all common detection vectors.
+// See SoHider.h for design notes.
 //
 
 #ifndef VIRTUALM_SOHIDER_H
@@ -31,6 +26,22 @@ public:
     // buffer and must free() it. *length is set to the size of the buffer in
     // bytes (excluding the trailing NUL).
     static char *readMapsFiltered(size_t *length);
+
+    // New: Filter /proc/self/smaps content (same API as readMapsFiltered)
+    static char *readSmapsFiltered(size_t *length);
+
+    // New: Filter /proc/self/fd content (hide symlinks to hidden SOs)
+    static char *readFdDirFiltered(size_t *length);
+
+    // New: Add a path pattern to hide (for advanced use)
+    static void addHiddenPath(const char *pathSubstring);
+
+    // New: Protect linker namespace from enumeration
+    // (hooks dl_iterate_phdr to filter out hidden libraries)
+    static void installLinkerNamespaceHook();
+
+private:
+    static bool isHidden(const char *path);
 };
 
 #endif //VIRTUALM_SOHIDER_H
