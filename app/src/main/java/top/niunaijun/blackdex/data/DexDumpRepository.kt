@@ -4,9 +4,11 @@ import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.webkit.URLUtil
 import androidx.lifecycle.MutableLiveData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.BlackBoxCore.getPackageManager
 import top.niunaijun.blackbox.BlackDexCore
@@ -30,28 +32,28 @@ class DexDumpRepository {
     private var dumpTaskId = 0
 
     fun getAppList(mAppListLiveData: MutableLiveData<List<AppInfo>>) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val installedApplications: List<ApplicationInfo> =
+                    getPackageManager().getInstalledApplications(0)
+            val installedList = mutableListOf<AppInfo>()
 
-        val installedApplications: List<ApplicationInfo> =
-                getPackageManager().getInstalledApplications(0)
-        val installedList = mutableListOf<AppInfo>()
+            for (installedApplication in installedApplications) {
+                val file = File(installedApplication.sourceDir)
 
-        for (installedApplication in installedApplications) {
-            val file = File(installedApplication.sourceDir)
+                if ((installedApplication.flags and ApplicationInfo.FLAG_SYSTEM) != 0) continue
 
-            if ((installedApplication.flags and ApplicationInfo.FLAG_SYSTEM) != 0) continue
+                if (!AbiUtils.isSupport(file)) continue
 
-            if (!AbiUtils.isSupport(file)) continue
+                val label = installedApplication.loadLabel(getPackageManager()).toString()
+                val icon = installedApplication.loadIcon(getPackageManager())
+                val info = AppInfo(label, installedApplication.packageName, icon)
+                installedList.add(info)
+            }
 
-
-            val info = AppInfo(
-                    installedApplication.loadLabel(getPackageManager()).toString(),
-                    installedApplication.packageName,
-                    installedApplication.loadIcon(getPackageManager())
-            )
-            installedList.add(info)
+            withContext(Dispatchers.Main) {
+                mAppListLiveData.value = installedList
+            }
         }
-
-        mAppListLiveData.postValue(installedList)
     }
 
     fun dumpDex(source: String, dexDumpLiveData: MutableLiveData<DumpInfo>) {
@@ -80,17 +82,27 @@ class DexDumpRepository {
     private fun startCountdown(installResult: InstallResult, dexDumpLiveData: MutableLiveData<DumpInfo>) {
         GlobalScope.launch {
             val tempId = dumpTaskId
-            while (BlackDexCore.get().isRunning) {
-                delay(20000)
-                //10s
-                if (!AppManager.mBlackBoxLoader.isFixCodeItem()) {
+            // Wait for the proxy process to actually start
+            var waitCount = 0
+            while (!BlackDexCore.get().isRunning && waitCount < 30) {
+                delay(500)
+                waitCount++
+            }
+            // Now wait for the proxy process to finish (or timeout)
+            val isFixCode = AppManager.mBlackBoxLoader.isFixCodeItem()
+            var timeoutCount = 0
+            val maxTimeout = if (isFixCode) 120 else 60 // 60s for normal, 120s for fixCodeItem
+            while (BlackDexCore.get().isRunning && timeoutCount < maxTimeout) {
+                delay(1000)
+                timeoutCount++
+                // Check if we already have dex files (early exit)
+                if (BlackDexCore.get().isExistDexFile(installResult.packageName)) {
                     break
                 }
-                //fixCodeItem 需要长时间运行，普通内存dump不需要
             }
             if (tempId == dumpTaskId) {
                 if (BlackDexCore.get().isExistDexFile(installResult.packageName)) {
-                    dexDumpLiveData.postValue( DumpInfo(
+                    dexDumpLiveData.postValue(DumpInfo(
                             DumpInfo.SUCCESS,
                             App.getContext().getString(R.string.dex_save, File(BlackBoxCore.get().dexDumpDir, installResult.packageName).absolutePath)
                     ))

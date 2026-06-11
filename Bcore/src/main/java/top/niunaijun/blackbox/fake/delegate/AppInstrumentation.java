@@ -103,13 +103,14 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
         if (BlackBoxCore.get().isEnableHookDump()) {
             String absolutePath = new File(BlackBoxCore.get().getDexDumpDir(), context.getPackageName()).getAbsolutePath();
             FileUtils.mkdirs(absolutePath);
-            Class<?> aClass = cl.loadClass(VMCore.class.getName());
             try {
-                Method initDumpDex = aClass.getDeclaredMethod("hookDumpDex", String.class);
+                // Use VMCore.class directly (loaded by BlackDex classloader)
+                // to ensure native methods are already registered
+                Method initDumpDex = VMCore.class.getDeclaredMethod("hookDumpDex", String.class);
                 initDumpDex.setAccessible(true);
                 initDumpDex.invoke(null, absolutePath);
             } catch (Throwable e) {
-                e.printStackTrace();
+                Log.e(TAG, "hookDumpDex failed", e);
             }
         }
         return super.newApplication(cl, className, context);

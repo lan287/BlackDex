@@ -191,6 +191,10 @@ void hookDumpDex(JNIEnv *env, jobject clazz, jstring dir) {
     DexDump::hookDumpDex(env, dir);
 }
 
+void enableDeepDump(JNIEnv *env, jobject clazz, jstring dir) {
+    DexDump::enableDeepDump(env, dir);
+}
+
 void cookieDumpDex(JNIEnv *env, jclass clazz, jlong cookie, jstring dir, jboolean fixCodeItem) {
     DexDump::cookieDumpDex(env, cookie, dir, fixCodeItem);
 }
@@ -209,6 +213,7 @@ static JNINativeMethod gMethods[] = {
         {"enableIO",        "()V",                                     (void *) enableIO},
         {"init",            "(I)V",                                    (void *) init},
         {"hookDumpDex",     "(Ljava/lang/String;)V",                   (void *) hookDumpDex},
+        {"enableDeepDump",  "(Ljava/lang/String;)V",                   (void *) enableDeepDump},
         {"cookieDumpDex",   "(JLjava/lang/String;Z)V",                 (void *) cookieDumpDex},
         {"setAntiTraceEnabled", "(Z)V",                                (void *) setAntiTraceEnabled},
         {"addHiddenLibrary",    "(Ljava/lang/String;)V",              (void *) addHiddenLibrary},
