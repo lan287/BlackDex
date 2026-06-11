@@ -1,6 +1,5 @@
 //
 // Created by Milk on 4/9/21.
-// Enhanced for modern ART versions and deep dump support.
 //
 
 #ifndef VIRTUALM_VMCORE_H
@@ -19,7 +18,7 @@ public:
     static jstring redirectPathString(JNIEnv *env, jstring path);
     static jobject redirectPathFile(JNIEnv *env, jobject path);
     static jlongArray loadEmptyDex(JNIEnv *env);
-    static bool is64Bit();
 };
+
 
 #endif //VIRTUALM_VMCORE_H

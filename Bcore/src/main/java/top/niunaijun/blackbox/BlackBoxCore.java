@@ -78,7 +78,7 @@ public class BlackBoxCore extends ClientConfiguration {
         if (clientConfiguration == null) {
             throw new IllegalArgumentException("ClientConfiguration is null!");
         }
-        //Reflection.unseal(context);
+        // Reflection.unseal(context);
         sContext = context;
         mClientConfiguration = clientConfiguration;
         mClientConfiguration.init();

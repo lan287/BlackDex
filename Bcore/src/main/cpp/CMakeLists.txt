@@ -6,11 +6,14 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 set(DOBBY_SOURCE_DIR ./Dobby)
-# Specify static linking, otherwise defaults to dynamic
+# 指定静态链接，否则默认动态链接
 set(GENERATE_SHARED OFF)
 add_subdirectory(${DOBBY_SOURCE_DIR} blackdex_d.out)
 
-# Include directories
+# Creates and names a library, sets it as either STATIC
+# or SHARED, and provides the relative paths to its source code.
+# You can define multiple libraries, and CMake builds them for you.
+# Gradle automatically packages shared libraries with your APK.
 include_directories( dex )
 include_directories( base )
 include_directories( jnihook )
@@ -24,28 +27,22 @@ aux_source_directory(android-base SRC3)
 aux_source_directory(utils SRC4)
 aux_source_directory(hook SRC5)
 aux_source_directory(jnihook SRC6)
-
-# Suppress warnings for third-party code
 add_compile_options(-w)
-
 add_library( # Sets the name of the library.
              blackdex
 
              # Sets the library as a shared library.
              SHARED
 
-             # Source files
+             # Provides a relative path to your source file(s).
              VmCore.cpp
-             DexDump.cpp
-             SoHider.cpp
-             AntiDebug.cpp
-             ${SRC3}
-             ${SRC1}
-             ${SRC2}
-             ${SRC4}
-             ${SRC5}
-             ${SRC6}
-             ${SRC7}
+        ${SRC3}
+        ${SRC1}
+        ${SRC2}
+        ${SRC4}
+        ${SRC5}
+        ${SRC6}
+        ${SRC7}
         )
 
 # Searches for a specified prebuilt library and stores the path as a
