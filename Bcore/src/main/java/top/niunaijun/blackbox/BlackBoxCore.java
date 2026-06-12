@@ -2,6 +2,7 @@ package top.niunaijun.blackbox;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -207,19 +208,47 @@ public class BlackBoxCore extends ClientConfiguration {
             DumpLogger.e("launchApk: error finding activities", e);
         }
 
-        // Last resort: try to start the process directly via the process manager
-        DumpLogger.i("launchApk: no activities found, trying direct process start");
+        // No activities at all - start a stub proxy activity to create the process,
+        // then bind the target app into that process
+        DumpLogger.i("launchApk: no activities found, starting stub proxy process");
         try {
-            String processName = packageName;
+            top.niunaijun.blackbox.core.system.BProcessManager pm =
+                    top.niunaijun.blackbox.core.system.BProcessManager.get();
+            int bpid = pm.getAvailableBPid();
+            if (bpid == -1) {
+                DumpLogger.e("launchApk: no available bpid");
+                return false;
+            }
+            DumpLogger.i("launchApk: allocated bpid=" + bpid);
+
+            // Start the proxy process by launching a stub ProxyActivity
+            Intent stubIntent = new Intent();
+            stubIntent.setComponent(new ComponentName(BlackBoxCore.getHostPkg(),
+                    ProxyManifest.getProxyActivity(bpid)));
+            stubIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            BlackBoxCore.getContext().startActivity(stubIntent);
+            DumpLogger.i("launchApk: started stub ProxyActivity P" + bpid);
+
+            // Wait for the process to start
+            Thread.sleep(2000);
+
+            // Now create the process record and bind the app
             top.niunaijun.blackbox.core.system.ProcessRecord pr =
-                    top.niunaijun.blackbox.core.system.BProcessManager.get()
-                            .startProcessLocked(packageName, processName, USER_ID, -1, Process.myUid(), Process.myPid());
+                    pm.startProcessLocked(packageName, packageName, USER_ID, bpid, Process.myUid(), Process.myPid());
             if (pr != null) {
-                DumpLogger.i("launchApk: direct process start succeeded, pid=" + pr.pid);
+                DumpLogger.i("launchApk: process started, pid=" + pr.pid);
+                try {
+                    pr.bActivityThread.bindApplication();
+                    DumpLogger.i("launchApk: bindApplication called");
+                } catch (Exception e) {
+                    DumpLogger.e("launchApk: bindApplication failed", e);
+                }
                 return true;
+            } else {
+                DumpLogger.e("launchApk: startProcessLocked returned null");
             }
         } catch (Exception e) {
-            DumpLogger.e("launchApk: direct process start failed", e);
+            DumpLogger.e("launchApk: stub proxy process start failed", e);
         }
 
         DumpLogger.e("launchApk: all methods failed");

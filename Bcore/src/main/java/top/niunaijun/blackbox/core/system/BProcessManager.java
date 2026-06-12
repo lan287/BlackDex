@@ -95,6 +95,22 @@ public class BProcessManager {
         return app;
     }
 
+    public int getAvailableBPid() {
+        synchronized (mProcessLock) {
+            for (int i = 0; i < ProxyManifest.FREE_COUNT; i++) {
+                boolean using = false;
+                for (ProcessRecord processRecord : mPidsSelfLocked) {
+                    if (processRecord.bpid == i) {
+                        using = true;
+                        break;
+                    }
+                }
+                if (!using) return i;
+            }
+            return -1;
+        }
+    }
+
     private int getUsingBPidL() {
         ActivityManager manager = (ActivityManager) BlackBoxCore.getContext().getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningAppProcessInfo> runningAppProcesses = manager.getRunningAppProcesses();
