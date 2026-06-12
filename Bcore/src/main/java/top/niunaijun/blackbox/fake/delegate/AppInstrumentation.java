@@ -18,6 +18,7 @@ import top.niunaijun.blackbox.core.VMCore;
 import top.niunaijun.blackbox.fake.hook.HookManager;
 import top.niunaijun.blackbox.fake.hook.IInjectHook;
 import top.niunaijun.blackbox.utils.FileUtils;
+import top.niunaijun.blackbox.utils.DumpLogger;
 import top.niunaijun.blackbox.utils.compat.ContextCompat;
 import top.niunaijun.blackbox.fake.service.HCallbackProxy;
 
@@ -99,19 +100,23 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
 
     @Override
     public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        DumpLogger.i("AppInstrumentation.newApplication: className=" + className + " pkg=" + context.getPackageName());
         ContextCompat.fix(context);
         if (BlackBoxCore.get().isEnableHookDump()) {
             String absolutePath = new File(BlackBoxCore.get().getDexDumpDir(), context.getPackageName()).getAbsolutePath();
+            DumpLogger.i("hookDumpDex: enableHookDump=true, dir=" + absolutePath);
             FileUtils.mkdirs(absolutePath);
             try {
-                // Use VMCore.class directly (loaded by BlackDex classloader)
-                // to ensure native methods are already registered
                 Method initDumpDex = VMCore.class.getDeclaredMethod("hookDumpDex", String.class);
                 initDumpDex.setAccessible(true);
                 initDumpDex.invoke(null, absolutePath);
+                DumpLogger.i("hookDumpDex: invoke SUCCESS");
             } catch (Throwable e) {
+                DumpLogger.e("hookDumpDex: invoke FAILED", e);
                 Log.e(TAG, "hookDumpDex failed", e);
             }
+        } else {
+            DumpLogger.i("hookDumpDex: enableHookDump=false, SKIPPED");
         }
         return super.newApplication(cl, className, context);
     }

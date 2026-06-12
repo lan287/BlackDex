@@ -19,6 +19,7 @@ import top.niunaijun.blackbox.app.BActivityThread;
 import top.niunaijun.blackbox.entity.dump.DumpResult;
 import top.niunaijun.blackbox.utils.DexUtils;
 import top.niunaijun.blackbox.utils.FileUtils;
+import top.niunaijun.blackbox.utils.DumpLogger;
 import top.niunaijun.blackbox.utils.compat.DexFileCompat;
 import top.niunaijun.jnihook.MethodUtils;
 
@@ -59,7 +60,17 @@ public class VMCore {
     public static native void enableDeepDump(String dir);
 
     public static void cookieDumpDex(ClassLoader classLoader, String packageName) {
+        DumpLogger.i("VMCore.cookieDumpDex: START, classLoader=" + (classLoader != null ? classLoader.getClass().getName() : "null"));
         List<Long> cookies = DexFileCompat.getCookies(classLoader);
+        DumpLogger.i("VMCore.cookieDumpDex: got " + cookies.size() + " cookies");
+        if (cookies.isEmpty()) {
+            DumpLogger.e("VMCore.cookieDumpDex: no cookies found! DexFileCompat.getCookies returned empty list");
+            return;
+        }
+        for (int i = 0; i < cookies.size(); i++) {
+            DumpLogger.i("VMCore.cookieDumpDex: cookie[" + i + "]=" + cookies.get(i));
+        }
+
         File file = new File(BlackBoxCore.get().getDexDumpDir(), packageName);
 
         DumpResult result = new DumpResult();
@@ -74,6 +85,7 @@ public class VMCore {
         for (int i = 0; i < cookies.size(); i++) {
             long cookie = cookies.get(i);
             if (cookie == 0) {
+                DumpLogger.w("VMCore.cookieDumpDex: cookie[" + i + "] is 0, skipping");
                 countDownLatch.countDown();
                 BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpProcess(cookies.size(), atomicInteger.getAndIncrement()));
                 continue;
@@ -85,8 +97,11 @@ public class VMCore {
                 } catch (InterruptedException ignored) {
                 }
             }
+            final int cookieIndex = i;
             executorService.execute(() -> {
+                DumpLogger.i("VMCore.cookieDumpDex: dumping cookie[" + cookieIndex + "]=" + cookie);
                 cookieDumpDex(cookie, file.getAbsolutePath(), BlackBoxCore.get().isFixCodeItem());
+                DumpLogger.i("VMCore.cookieDumpDex: cookie[" + cookieIndex + "] dump done");
                 BlackBoxCore.getBDumpManager().noticeMonitor(result.dumpProcess(cookies.size(), atomicInteger.getAndIncrement()));
                 countDownLatch.countDown();
             });
@@ -95,14 +110,17 @@ public class VMCore {
             countDownLatch.await();
         } catch (InterruptedException ignored) {
         }
+        DumpLogger.i("VMCore.cookieDumpDex: all cookies processed, fixing dex files");
         File[] files = file.listFiles();
         if (files != null) {
             for (File dex : files) {
                 if (dex.isFile() && dex.getAbsolutePath().endsWith(".dex")) {
+                    DumpLogger.i("VMCore.cookieDumpDex: fixing " + dex.getName() + " (" + dex.length() + " bytes)");
                     DexUtils.fixDex(dex);
                 }
             }
         }
+        DumpLogger.i("VMCore.cookieDumpDex: DONE");
     }
 
     @Keep

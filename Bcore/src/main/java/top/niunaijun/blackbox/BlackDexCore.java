@@ -13,6 +13,7 @@ import top.niunaijun.blackbox.app.configuration.ClientConfiguration;
 import top.niunaijun.blackbox.core.system.dump.IBDumpMonitor;
 import top.niunaijun.blackbox.entity.pm.InstallResult;
 import top.niunaijun.blackbox.proxy.ProxyManifest;
+import top.niunaijun.blackbox.utils.DumpLogger;
 
 /**
  * Created by Milk on 2021/5/22.
@@ -48,43 +49,61 @@ public class BlackDexCore {
     }
 
     public InstallResult dumpDex(String packageName) {
+        DumpLogger.init(new File(BlackBoxCore.get().getDexDumpDir(), "dump.log"));
+        DumpLogger.i("=== dumpDex(String) START === packageName=" + packageName);
         InstallResult installResult = BlackBoxCore.get().installPackage(packageName);
+        DumpLogger.i("installPackage result: success=" + (installResult != null && installResult.success) + " packageName=" + (installResult != null ? installResult.packageName : "null"));
         if (installResult.success) {
             boolean b = BlackBoxCore.get().launchApk(packageName);
+            DumpLogger.i("launchApk result: " + b);
             if (!b) {
+                DumpLogger.e("launchApk failed, uninstalling");
                 BlackBoxCore.get().uninstallPackage(installResult.packageName);
                 return null;
             }
             return installResult;
         } else {
+            DumpLogger.e("installPackage failed");
             return null;
         }
     }
 
     public InstallResult dumpDex(File file) {
+        DumpLogger.init(new File(BlackBoxCore.get().getDexDumpDir(), "dump.log"));
+        DumpLogger.i("=== dumpDex(File) START === file=" + file.getAbsolutePath());
         InstallResult installResult = BlackBoxCore.get().installPackage(file);
+        DumpLogger.i("installPackage result: success=" + (installResult != null && installResult.success));
         if (installResult.success) {
             boolean b = BlackBoxCore.get().launchApk(installResult.packageName);
+            DumpLogger.i("launchApk result: " + b);
             if (!b) {
+                DumpLogger.e("launchApk failed, uninstalling");
                 BlackBoxCore.get().uninstallPackage(installResult.packageName);
                 return null;
             }
             return installResult;
         } else {
+            DumpLogger.e("installPackage failed");
             return null;
         }
     }
 
     public InstallResult dumpDex(Uri file) {
+        DumpLogger.init(new File(BlackBoxCore.get().getDexDumpDir(), "dump.log"));
+        DumpLogger.i("=== dumpDex(Uri) START === uri=" + file.toString());
         InstallResult installResult = BlackBoxCore.get().installPackage(file);
+        DumpLogger.i("installPackage result: success=" + (installResult != null && installResult.success));
         if (installResult.success) {
             boolean b = BlackBoxCore.get().launchApk(installResult.packageName);
+            DumpLogger.i("launchApk result: " + b);
             if (!b) {
+                DumpLogger.e("launchApk failed, uninstalling");
                 BlackBoxCore.get().uninstallPackage(installResult.packageName);
                 return null;
             }
             return installResult;
         } else {
+            DumpLogger.e("installPackage failed");
             return null;
         }
     }

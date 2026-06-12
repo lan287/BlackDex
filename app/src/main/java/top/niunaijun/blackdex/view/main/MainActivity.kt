@@ -8,13 +8,17 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.files.fileChooser
+import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.BlackDexCore
 import top.niunaijun.blackbox.core.system.dump.IBDumpMonitor
 import top.niunaijun.blackbox.entity.dump.DumpResult
+import top.niunaijun.blackbox.utils.DumpLogger
 import top.niunaijun.blackdex.R
 import top.niunaijun.blackdex.data.entity.AppInfo
 import top.niunaijun.blackdex.data.entity.DumpInfo
@@ -118,18 +122,11 @@ class MainActivity : PermissionActivity() {
                     }
                     DumpInfo.TIMEOUT -> {
                         hideLoading()
-                        MaterialDialog(this).show {
-                            title(R.string.unpack_fail)
-                            message(R.string.jump_issue)
-                            negativeButton(R.string.github) {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://github.com/CodingGay/BlackDex/issues")
-                                )
-                                startActivity(intent)
-                            }
-                            positiveButton(res = R.string.confirm)
-                        }
+                        showDumpFailedDialog()
+                    }
+                    DumpInfo.FAIL -> {
+                        hideLoading()
+                        showDumpFailedDialog()
                     }
                     else -> {
                         viewModel.dexDumpSuccess()
@@ -185,6 +182,37 @@ class MainActivity : PermissionActivity() {
             it.name.contains(newText, true) or it.packageName.contains(newText, true)
         }
         mAdapter.replaceData(newList)
+    }
+
+    private fun showDumpFailedDialog() {
+        val logContent = try {
+            DumpLogger.readLog()
+        } catch (e: Exception) {
+            "Failed to read log: ${e.message}"
+        }
+
+        val scrollView = ScrollView(this).apply {
+            val textView = TextView(this@MainActivity).apply {
+                text = logContent
+                textSize = 11f
+                setPadding(32, 24, 32, 24)
+                setTextIsSelectable(true)
+            }
+            addView(textView)
+        }
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.unpack_fail)
+            .setView(scrollView)
+            .setPositiveButton(R.string.confirm) { _, _ -> }
+            .setNegativeButton(R.string.github) { _, _ ->
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/CodingGay/BlackDex/issues")
+                )
+                startActivity(intent)
+            }
+            .show()
     }
 
     private fun showLoading() {

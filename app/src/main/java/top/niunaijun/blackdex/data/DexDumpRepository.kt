@@ -14,6 +14,7 @@ import top.niunaijun.blackbox.BlackBoxCore.getPackageManager
 import top.niunaijun.blackbox.BlackDexCore
 import top.niunaijun.blackbox.entity.pm.InstallResult
 import top.niunaijun.blackbox.utils.AbiUtils
+import top.niunaijun.blackbox.utils.DumpLogger
 import top.niunaijun.blackdex.R
 import top.niunaijun.blackdex.app.App
 import top.niunaijun.blackdex.app.AppManager
@@ -56,6 +57,9 @@ class DexDumpRepository {
 
     fun dumpDex(source: String, dexDumpLiveData: MutableLiveData<DumpInfo>) {
         monitorDelivered = false
+        DumpLogger.init(File(BlackBoxCore.get().dexDumpDir, "dump.log"))
+        DumpLogger.clear()
+        DumpLogger.i("=== DexDumpRepository.dumpDex START === source=$source")
         dexDumpLiveData.postValue(DumpInfo(DumpInfo.LOADING))
         val result = if (URLUtil.isValidUrl(source)) {
             BlackDexCore.get().dumpDex(Uri.parse(source))
@@ -65,10 +69,12 @@ class DexDumpRepository {
             BlackDexCore.get().dumpDex(source)
         }
 
+        DumpLogger.i("dumpDex result: ${result != null}")
         if (result != null) {
             dumpTaskId++
             startCountdown(result, dexDumpLiveData)
         } else {
+            DumpLogger.e("dumpDex: installPackage or launchApk returned null")
             dexDumpLiveData.postValue(DumpInfo(DumpInfo.TIMEOUT))
         }
     }
@@ -91,12 +97,14 @@ class DexDumpRepository {
     private fun startCountdown(installResult: InstallResult, dexDumpLiveData: MutableLiveData<DumpInfo>) {
         GlobalScope.launch {
             val tempId = dumpTaskId
+            DumpLogger.i("startCountdown: waiting for proxy process to start")
             // Wait for the proxy process to actually start
             var waitCount = 0
             while (!BlackDexCore.get().isRunning && waitCount < 30) {
                 delay(500)
                 waitCount++
             }
+            DumpLogger.i("startCountdown: isRunning=${BlackDexCore.get().isRunning} after ${waitCount * 500}ms")
             // Wait for the proxy process to finish (or timeout)
             val isFixCode = AppManager.mBlackBoxLoader.isFixCodeItem()
             var timeoutCount = 0
@@ -105,20 +113,27 @@ class DexDumpRepository {
                 delay(1000)
                 timeoutCount++
                 // If monitor already delivered result, stop waiting
-                if (monitorDelivered) return@launch
+                if (monitorDelivered) {
+                    DumpLogger.i("startCountdown: monitor delivered result, exiting")
+                    return@launch
+                }
                 // Early exit if dex files exist
                 if (BlackDexCore.get().isExistDexFile(installResult.packageName)) {
+                    DumpLogger.i("startCountdown: dex files found, exiting early")
                     break
                 }
             }
+            DumpLogger.i("startCountdown: loop ended, timeoutCount=$timeoutCount, isRunning=${BlackDexCore.get().isRunning}")
             // Only post result if monitor hasn't already delivered one
             if (tempId == dumpTaskId && !monitorDelivered) {
                 if (BlackDexCore.get().isExistDexFile(installResult.packageName)) {
+                    DumpLogger.i("startCountdown: SUCCESS")
                     dexDumpLiveData.postValue(DumpInfo(
                             DumpInfo.SUCCESS,
                             App.getContext().getString(R.string.dex_save, File(BlackBoxCore.get().dexDumpDir, installResult.packageName).absolutePath)
                     ))
                 } else {
+                    DumpLogger.e("startCountdown: TIMEOUT - no dex files found")
                     dexDumpLiveData.postValue(DumpInfo(DumpInfo.TIMEOUT))
                 }
             }
