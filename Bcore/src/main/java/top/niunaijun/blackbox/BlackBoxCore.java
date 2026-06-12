@@ -23,6 +23,7 @@ import top.niunaijun.blackbox.entity.pm.InstallOption;
 import top.niunaijun.blackbox.entity.pm.InstallResult;
 import top.niunaijun.blackbox.core.system.DaemonService;
 import top.niunaijun.blackbox.utils.FileUtils;
+import top.niunaijun.blackbox.utils.DumpLogger;
 import top.niunaijun.blackbox.utils.ShellUtils;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 import top.niunaijun.blackbox.utils.compat.BundleCompat;
@@ -160,11 +161,69 @@ public class BlackBoxCore extends ClientConfiguration {
 
     public boolean launchApk(String packageName) {
         Intent launchIntentForPackage = getBPackageManager().getLaunchIntentForPackage(packageName, USER_ID);
-        if (launchIntentForPackage == null) {
-            return false;
+        if (launchIntentForPackage != null) {
+            startActivity(launchIntentForPackage, USER_ID);
+            return true;
         }
-        startActivity(launchIntentForPackage, USER_ID);
-        return true;
+
+        // No launcher activity found - try to find any activity to start the process
+        DumpLogger.i("launchApk: no launcher activity, trying to find any activity");
+        try {
+            PackageInfo pkgInfo = getBPackageManager().getPackageInfo(packageName, PackageManager.GET_ACTIVITIES, USER_ID);
+            if (pkgInfo != null && pkgInfo.activities != null && pkgInfo.activities.length > 0) {
+                // Find first enabled activity
+                for (android.content.pm.ActivityInfo ai : pkgInfo.activities) {
+                    if (ai.enabled && ai.exported) {
+                        DumpLogger.i("launchApk: found exported activity: " + ai.name);
+                        Intent intent = new Intent(Intent.ACTION_MAIN);
+                        intent.setClassName(packageName, ai.name);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent, USER_ID);
+                        return true;
+                    }
+                }
+                // No exported activity, try any enabled activity
+                for (android.content.pm.ActivityInfo ai : pkgInfo.activities) {
+                    if (ai.enabled) {
+                        DumpLogger.i("launchApk: found non-exported activity: " + ai.name);
+                        Intent intent = new Intent(Intent.ACTION_MAIN);
+                        intent.setClassName(packageName, ai.name);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent, USER_ID);
+                        return true;
+                    }
+                }
+                // Try the first activity regardless
+                if (pkgInfo.activities.length > 0) {
+                    DumpLogger.i("launchApk: trying first activity: " + pkgInfo.activities[0].name);
+                    Intent intent = new Intent(Intent.ACTION_MAIN);
+                    intent.setClassName(packageName, pkgInfo.activities[0].name);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent, USER_ID);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            DumpLogger.e("launchApk: error finding activities", e);
+        }
+
+        // Last resort: try to start the process directly via the process manager
+        DumpLogger.i("launchApk: no activities found, trying direct process start");
+        try {
+            String processName = packageName;
+            top.niunaijun.blackbox.core.system.ProcessRecord pr =
+                    top.niunaijun.blackbox.core.system.BProcessManager.get()
+                            .startProcessLocked(packageName, processName, USER_ID, -1, Process.myUid(), Process.myPid());
+            if (pr != null) {
+                DumpLogger.i("launchApk: direct process start succeeded, pid=" + pr.pid);
+                return true;
+            }
+        } catch (Exception e) {
+            DumpLogger.e("launchApk: direct process start failed", e);
+        }
+
+        DumpLogger.e("launchApk: all methods failed");
+        return false;
     }
 
     public boolean isInstalled(String packageName) {
