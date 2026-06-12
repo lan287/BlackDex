@@ -21,7 +21,7 @@ import top.niunaijun.blackbox.BlackBoxCore;
 public class ProviderCall {
     public static Bundle callSafely(String authority, String methodName, String arg, Bundle bundle) {
         try {
-            return call(authority, BlackBoxCore.get().getContext(), methodName, arg, bundle, 5);
+            return call(authority, BlackBoxCore.get().getContext(), methodName, arg, bundle, 30);
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }

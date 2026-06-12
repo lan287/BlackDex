@@ -8,8 +8,10 @@ import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.util.Log;
 
 public class ContentProviderCompat {
+    private static final String TAG = "ContentProviderCompat";
 
     public static Bundle call(Context context, Uri uri, String method, String arg, Bundle extras, int retryCount) throws IllegalAccessException {
         if (VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -18,10 +20,13 @@ public class ContentProviderCompat {
         ContentProviderClient client = acquireContentProviderClientRetry(context, uri, retryCount);
         try {
             if (client == null) {
+                Log.e(TAG, "call: client is null after " + retryCount + " retries");
                 throw new IllegalAccessException();
             }
+            Log.d(TAG, "call: client acquired, calling method=" + method);
             return client.call(method, arg, extras);
         } catch (RemoteException e) {
+            Log.e(TAG, "call: RemoteException", e);
             throw new IllegalAccessException(e.getMessage());
         } finally {
             releaseQuietly(client);
@@ -46,9 +51,10 @@ public class ContentProviderCompat {
         if (client == null) {
             int retry = 0;
             while (retry < retryCount && client == null) {
-                SystemClock.sleep(100);
+                SystemClock.sleep(300);
                 retry++;
                 client = acquireContentProviderClient(context, uri);
+                Log.d(TAG, "acquireContentProviderClientRetry: retry " + retry + "/" + retryCount + " client=" + (client != null));
             }
         }
         return client;
@@ -59,9 +65,10 @@ public class ContentProviderCompat {
         if (client == null) {
             int retry = 0;
             while (retry < retryCount && client == null) {
-                SystemClock.sleep(100);
+                SystemClock.sleep(300);
                 retry++;
                 client = acquireContentProviderClient(context, name);
+                Log.d(TAG, "acquireContentProviderClientRetry: retry " + retry + "/" + retryCount + " client=" + (client != null));
             }
         }
         return client;

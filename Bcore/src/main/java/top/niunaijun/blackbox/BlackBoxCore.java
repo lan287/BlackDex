@@ -229,8 +229,9 @@ public class BlackBoxCore extends ClientConfiguration {
             BlackBoxCore.getContext().startActivity(stubIntent);
             DumpLogger.i("launchApk: started stub ProxyActivity P" + bpid);
 
-            // Wait for the process to start
-            Thread.sleep(2000);
+            // Wait for the process to start (ContentProvider needs time to initialize)
+            // With retryCount=30 and sleep=300ms, ProviderCall waits up to 9 seconds
+            Thread.sleep(3000);
 
             // Now create the process record and bind the app
             top.niunaijun.blackbox.core.system.ProcessRecord pr =

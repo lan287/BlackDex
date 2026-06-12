@@ -20,6 +20,7 @@ import top.niunaijun.blackbox.proxy.ProxyManifest;
 import top.niunaijun.blackbox.core.system.pm.BPackageManagerService;
 import top.niunaijun.blackbox.core.system.user.BUserHandle;
 import top.niunaijun.blackbox.utils.Slog;
+import top.niunaijun.blackbox.utils.DumpLogger;
 import top.niunaijun.blackbox.utils.compat.ApplicationThreadCompat;
 import top.niunaijun.blackbox.utils.compat.BundleCompat;
 import top.niunaijun.blackbox.utils.provider.ProviderCall;
@@ -164,14 +165,26 @@ public class BProcessManager {
 
     private boolean initAppProcessL(ProcessRecord record) {
         Log.d(TAG, "initProcess: " + record.processName);
+        DumpLogger.i("BProcessManager.initAppProcessL: processName=" + record.processName + " authority=" + record.getProviderAuthority());
         AppConfig appConfig = record.getClientConfig();
         Bundle bundle = new Bundle();
         bundle.putParcelable(AppConfig.KEY, appConfig);
+        DumpLogger.i("BProcessManager.initAppProcessL: calling ProviderCall with authority=" + record.getProviderAuthority());
         Bundle init = ProviderCall.callSafely(record.getProviderAuthority(), "_Black_|_init_process_", null, bundle);
-        IBinder appThread = BundleCompat.getBinder(init, "_Black_|_client_");
-        if (appThread == null || !appThread.isBinderAlive()) {
+        if (init == null) {
+            DumpLogger.e("BProcessManager.initAppProcessL: ProviderCall returned null!");
             return false;
         }
+        IBinder appThread = BundleCompat.getBinder(init, "_Black_|_client_");
+        if (appThread == null) {
+            DumpLogger.e("BProcessManager.initAppProcessL: appThread is null!");
+            return false;
+        }
+        if (!appThread.isBinderAlive()) {
+            DumpLogger.e("BProcessManager.initAppProcessL: appThread is not alive!");
+            return false;
+        }
+        DumpLogger.i("BProcessManager.initAppProcessL: got appThread, attaching client");
         attachClientL(record, appThread);
         return true;
     }
